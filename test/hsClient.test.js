@@ -81,3 +81,33 @@ test('retries on 429 then succeeds', async () => {
   assert.equal(n, 2);
   assert.deepEqual(r, { results: [] });
 });
+
+test('a NON-pat-format token is still redacted (the split path, not the regex, does the work)', async () => {
+  const token = 'legacy-OAUTH-Secret-1234567890';
+  const restore = stubFetch(async () => textRes(`{"message":"denied for ${token}"}`, 403));
+  await assert.rejects(
+    () => makeClient(token).ping(),
+    (err) => {
+      assert.doesNotMatch(err.message, /legacy-OAUTH-Secret/);
+      assert.match(err.message, /REDACTED/);
+      return true;
+    }
+  );
+  restore();
+});
+
+test('the token is redacted on the network-error (rejected fetch) path too', async () => {
+  const token = 'pat-na1-networksecret';
+  const restore = stubFetch(async () => {
+    throw new Error(`connect ECONNREFUSED using ${token}`);
+  });
+  await assert.rejects(
+    () => makeClient(token).ping(),
+    (err) => {
+      assert.doesNotMatch(err.message, /networksecret/);
+      assert.match(err.message, /REDACTED|pat-\*\*\*/);
+      return true;
+    }
+  );
+  restore();
+});

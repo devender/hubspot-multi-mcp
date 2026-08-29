@@ -10,6 +10,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { makeClient } from './lib/hsClient.js';
 import { loadPortals } from './lib/portals.js';
+import { findAcross } from './lib/findAcross.js';
 
 const STANDARD_OBJECTS = ['contacts', 'companies', 'deals', 'tickets'];
 
@@ -94,7 +95,7 @@ export async function startServer() {
     { instance: instanceArg },
     async ({ instance }) => {
       const schemas = await clientFor(instance).listSchemas();
-      const custom = (schemas.results ?? []).map((s) => ({
+      const custom = (schemas?.results ?? []).map((s) => ({
         name: s.name,
         objectTypeId: s.objectTypeId,
         labels: s.labels,
@@ -110,7 +111,7 @@ export async function startServer() {
     { instance: instanceArg, object: objectArg },
     async ({ instance, object }) => {
       const r = await clientFor(instance).listProperties(object);
-      const props = (r.results ?? []).map((p) => ({
+      const props = (r?.results ?? []).map((p) => ({
         name: p.name,
         label: p.label,
         type: p.type,
@@ -138,7 +139,7 @@ export async function startServer() {
     },
     async ({ instance, object, query, properties, limit }) => {
       const r = await clientFor(instance).search(object, { query, properties, limit: limit ?? 25 });
-      return text(r.results ?? r);
+      return text(r?.results ?? r ?? []);
     }
   );
 
@@ -163,7 +164,7 @@ export async function startServer() {
     { instance: instanceArg },
     async ({ instance }) => {
       const r = await clientFor(instance).listOwners();
-      return text(r.results ?? r);
+      return text(r?.results ?? r ?? []);
     }
   );
 
@@ -177,19 +178,7 @@ export async function startServer() {
     },
     async ({ query, object, limit }) => {
       if (names.length === 0) return text('No portals configured. Run `npx hubspot-multi-mcp setup`.');
-      const per = limit ?? 10;
-      const summary = [];
-      for (const n of names) {
-        try {
-          const r = await clients[n].search(object, { query, limit: per });
-          const results = r.results ?? [];
-          summary.push({ instance: n, matched: results.length > 0, count: results.length, results });
-        } catch (e) {
-          summary.push({ instance: n, error: e.message });
-        }
-      }
-      const hits = summary.filter((s) => s.matched).map((s) => s.instance);
-      return text({ query, object, matched_in: hits, portals: summary });
+      return text(await findAcross(clients, { query, object, limit: limit ?? 10 }));
     }
   );
 

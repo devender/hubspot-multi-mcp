@@ -54,8 +54,11 @@ delete anything, even if a key had write permission.
    ```bash
    npx hubspot-multi-mcp setup
    ```
-3. **Name each portal and paste its token** when asked. Repeat for as many portals as you have; press
-   **Enter** on the name to finish. Setup checks each token and saves them privately on your computer.
+   _For a permanent install that always loads, run `npm install -g hubspot-multi-mcp` first, then
+   `hubspot-multi-mcp setup`._
+3. **Name each portal and paste its token** when asked (the token is **hidden as you paste** — that's
+   expected). Repeat for as many portals as you have; press **Enter** on the name to finish. Setup
+   checks each token and saves them privately on your computer.
 4. **Fully quit Claude Desktop** (macOS: **Cmd+Q**, not just the window; Windows: right-click the tray
    icon → Quit) and reopen it.
 5. **Try it** — ask Claude:
@@ -113,8 +116,9 @@ search like any other.
 
 - **The tool doesn't appear in Claude** → make sure you **fully quit and reopened** Claude Desktop
   (Cmd+Q on macOS). A running app only loads MCP servers at startup.
-- **"spawn npx ENOENT" / server won't start** → Node.js isn't installed, or was installed after
-  setup. Install Node (<https://nodejs.org>) and re-run `npx hubspot-multi-mcp setup`.
+- **Server won't start / "spawn ENOENT"** → the Node.js used at setup was moved or uninstalled
+  (common if you later switch Node versions with nvm/volta/fnm). Re-run `npx hubspot-multi-mcp setup`
+  to re-pin it.
 - **A token "did not work"** → wrong portal, or missing read scopes. Re-issue the private-app token
   with the read scopes above and run setup again.
 

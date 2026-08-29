@@ -13,7 +13,6 @@ import { makeClient } from './lib/hsClient.js';
 import { savePortals, PORTALS_PATH, slugify } from './lib/portals.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CLI_PATH = path.join(__dirname, 'cli.js');
 const CLAUDE_CONFIG = path.join(
   os.homedir(),
   'Library',
@@ -25,19 +24,67 @@ const SERVER_KEY = 'hubspot-multi';
 
 const ask = (rl, q) => new Promise((res) => rl.question(q, (a) => res(a.trim())));
 
-// How should Claude Desktop launch us? If we're running from an npx/global install, relaunch via
-// npx (self-updating, no path to a temp cache). If from a local clone, point node at cli.js.
-function launcherConfig() {
-  const installed = /[/\\](?:_npx|node_modules)[/\\]/.test(__dirname);
-  if (installed) {
-    let npx = 'npx';
-    const guess = path.join(path.dirname(process.execPath), 'npx');
-    if (fs.existsSync(guess)) npx = guess;
-    return { command: npx, args: ['-y', 'hubspot-multi-mcp'] };
+// Ask for a secret without echoing it to the terminal (so a pasted token never lands in scrollback
+// or a screen recording). We mute readline's output writer while the value is typed, then restore it.
+function askSecret(rl, query) {
+  return new Promise((resolve) => {
+    rl.question(query, (answer) => {
+      rl._writeToOutput = origWrite;
+      rl.output.write('\n');
+      resolve(answer.trim());
+    });
+    const origWrite = rl._writeToOutput.bind(rl);
+    rl._writeToOutput = () => {};
+  });
+}
+
+// How should Claude Desktop launch us? Always pin the ABSOLUTE node binary + the ABSOLUTE path to
+// this package's cli.js. Claude Desktop launches servers with a minimal PATH, so a bare `node`/`npx`
+// can fail with "spawn ENOENT" (notably under nvm/volta/fnm); an absolute pair has no PATH dependency.
+export function launcherConfig(dirname = __dirname) {
+  return { command: process.execPath, args: [path.join(dirname, 'cli.js')] };
+}
+
+// Pure, non-destructive merge: add/replace only our server key, preserving every other key and every
+// other configured MCP server.
+export function mergeMcpServer(cfg, serverKey, launcher) {
+  const base = cfg && typeof cfg === 'object' ? cfg : {};
+  const servers = base.mcpServers && typeof base.mcpServers === 'object' ? base.mcpServers : {};
+  return { ...base, mcpServers: { ...servers, [serverKey]: launcher } };
+}
+
+// Read → back up → merge → write the Claude Desktop config. Non-destructive to any other servers.
+// On an unparseable existing config it warns loudly (naming the backup) rather than silently dropping
+// the user's other servers.
+export function registerInClaudeDesktop({ configPath, serverKey, launcher, log = console.log }) {
+  let cfg = {};
+  let backedUp = null;
+  let parseFailed = false;
+  if (fs.existsSync(configPath)) {
+    // Back up FIRST, before any write. The config may hold other servers' secrets → lock it to 600.
+    backedUp = `${configPath}.bak-${process.pid}`;
+    fs.copyFileSync(configPath, backedUp);
+    try {
+      fs.chmodSync(backedUp, 0o600);
+    } catch {
+      /* no-op on platforms without mode support */
+    }
+    try {
+      cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    } catch {
+      parseFailed = true;
+      log(
+        `  ⚠️  Your existing Claude config was not valid JSON. It is backed up at\n` +
+          `     ${backedUp}\n` +
+          `     Starting a fresh config — your other MCP servers may need to be re-added from that backup.`
+      );
+      cfg = {};
+    }
+  } else {
+    fs.mkdirSync(path.dirname(configPath), { recursive: true });
   }
-  // Local clone: use the absolute path to THIS node binary (Claude Desktop launches servers with a
-  // minimal PATH, so a bare "node" often fails with "spawn node ENOENT").
-  return { command: process.execPath, args: [CLI_PATH] };
+  fs.writeFileSync(configPath, JSON.stringify(mergeMcpServer(cfg, serverKey, launcher), null, 2));
+  return { backedUp, parseFailed };
 }
 
 export async function runSetup() {
@@ -60,7 +107,7 @@ export async function runSetup() {
       console.log(`    – "${key}" is already added; pick a different name.\n`);
       continue;
     }
-    const token = await ask(rl, `  Paste the READ-ONLY token for "${key}": `);
+    const token = await askSecret(rl, `  Paste the READ-ONLY token for "${key}" (input hidden): `);
     if (!token) {
       console.log('    – no token entered; skipped.\n');
       continue;
@@ -98,23 +145,19 @@ export async function runSetup() {
   savePortals(portals);
   console.log(`  Saved ${Object.keys(portals).length} portal(s) to ${PORTALS_PATH} (readable only by you).`);
 
-  // Register in the Claude Desktop config, preserving anything already there.
-  let cfg = {};
-  if (fs.existsSync(CLAUDE_CONFIG)) {
-    try {
-      cfg = JSON.parse(fs.readFileSync(CLAUDE_CONFIG, 'utf8'));
-    } catch {
-      cfg = {};
-    }
-    fs.copyFileSync(CLAUDE_CONFIG, `${CLAUDE_CONFIG}.bak-${process.pid}`);
-  } else {
-    fs.mkdirSync(path.dirname(CLAUDE_CONFIG), { recursive: true });
-  }
-  cfg.mcpServers = cfg.mcpServers || {};
-  cfg.mcpServers[SERVER_KEY] = launcherConfig();
-  fs.writeFileSync(CLAUDE_CONFIG, JSON.stringify(cfg, null, 2));
-
+  registerInClaudeDesktop({ configPath: CLAUDE_CONFIG, serverKey: SERVER_KEY, launcher: launcherConfig() });
   console.log(`  Registered "${SERVER_KEY}" in Claude Desktop:\n    ${CLAUDE_CONFIG}`);
+
+  // The launcher is pinned to this exact cli.js. If we're running from the transient npx cache, that
+  // path can be garbage-collected — recommend a durable install so the tool keeps loading.
+  if (/[/\\]_npx[/\\]/.test(__dirname)) {
+    console.log(
+      '\n  Note: you ran this via npx (no install). For a durable setup, install it once with\n' +
+        '    npm install -g hubspot-multi-mcp\n' +
+        '  then re-run `hubspot-multi-mcp setup`, so Claude Desktop always finds it.'
+    );
+  }
+
   console.log('\n  Done! QUIT the Claude Desktop app completely (Cmd+Q) and reopen it,');
   console.log('  then ask Claude: "list my hubspot portals".\n');
 }
