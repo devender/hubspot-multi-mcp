@@ -1,0 +1,44 @@
+{
+  "name": "hubspot-multi-mcp",
+  "version": "0.1.0",
+  "description": "Local, read-only MCP server that connects Claude to MANY HubSpot portals at once, by name. Unofficial, not affiliated with HubSpot.",
+  "type": "module",
+  "bin": {
+    "hubspot-multi-mcp": "cli.js"
+  },
+  "scripts": {
+    "setup": "node cli.js setup",
+    "verify": "node cli.js verify",
+    "start": "node cli.js",
+    "test": "node --test",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "cli.js",
+    "server.js",
+    "setup.js",
+    "verify.js",
+    "lib/",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.23.8"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "hubspot",
+    "claude",
+    "crm",
+    "multi-account",
+    "multi-portal"
+  ],
+  "license": "MIT",
+  "author": "Devender Gollapally"
+}

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+.env
+# never commit secrets or the local Claude Desktop config backups
+portals.json
+claude_desktop_config.json*
