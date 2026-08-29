@@ -12,7 +12,8 @@
     "start": "node cli.js",
     "test": "node --test",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "prepublishOnly": "npm run lint && npm test"
   },
   "engines": {
     "node": ">=18"
@@ -41,6 +42,17 @@
   ],
   "license": "MIT",
   "author": "Devender Gollapally",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devender/hubspot-multi-mcp.git"
+  },
+  "homepage": "https://github.com/devender/hubspot-multi-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/devender/hubspot-multi-mcp/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.9.1",
