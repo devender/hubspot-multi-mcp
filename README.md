@@ -28,22 +28,22 @@ one-account connector simply can't do.
 
 Read-only tools, each targeting a portal by the name you gave it:
 
-| Tool | What it does |
-|---|---|
-| `hubspot_list_instances` | Show which portals are connected + their account ids |
-| `hubspot_list_objects` | List object types in a portal — standard **and custom** objects |
-| `hubspot_describe_object` | List the fields/properties of an object type |
-| `hubspot_search` | Search a CRM object (contacts / companies / deals / tickets / custom) |
-| `hubspot_get` | Fetch a single record by id |
-| `hubspot_list_owners` | List CRM owners (users) |
-| `hubspot_find_across` | **Search every connected portal at once** and report which matched |
+| Tool                      | What it does                                                          |
+| ------------------------- | --------------------------------------------------------------------- |
+| `hubspot_list_instances`  | Show which portals are connected + their account ids                  |
+| `hubspot_list_objects`    | List object types in a portal — standard **and custom** objects       |
+| `hubspot_describe_object` | List the fields/properties of an object type                          |
+| `hubspot_search`          | Search a CRM object (contacts / companies / deals / tickets / custom) |
+| `hubspot_get`             | Fetch a single record by id                                           |
+| `hubspot_list_owners`     | List CRM owners (users)                                               |
+| `hubspot_find_across`     | **Search every connected portal at once** and report which matched    |
 
 **Read-only by design** — the server only ever issues read calls, so it cannot create, edit, or
 delete anything, even if a key had write permission.
 
 ---
 
-## Quick start  *(about 5 minutes)*
+## Quick start _(about 5 minutes)_
 
 **You need:** a Mac or Windows PC, the **Claude Desktop** app, **Node.js 18+**
 (check with `node --version`; if it's missing, install the LTS from <https://nodejs.org>), and a
@@ -59,11 +59,11 @@ delete anything, even if a key had write permission.
 4. **Fully quit Claude Desktop** (macOS: **Cmd+Q**, not just the window; Windows: right-click the tray
    icon → Quit) and reopen it.
 5. **Try it** — ask Claude:
-   > *"List my hubspot portals."*
-   then
-   > *"In the **sales** hubspot, find the contact for jane@example.com."*
-   or, when you're not sure which portal has it:
-   > *"Find acme.com **across all** my hubspots."*
+   > _"List my hubspot portals."_
+   > then
+   > _"In the **sales** hubspot, find the contact for jane@example.com."_
+   > or, when you're not sure which portal has it:
+   > _"Find acme.com **across all** my hubspots."_
 
 **Check it's working any time:** `npx hubspot-multi-mcp verify` (prints the portals it can reach; no
 secrets shown).
@@ -71,7 +71,7 @@ secrets shown).
 
 ---
 
-## How to get a read-only HubSpot token  *(one per portal)*
+## How to get a read-only HubSpot token _(one per portal)_
 
 Do this in each HubSpot portal you want to connect. You need to be an admin of that portal (or ask
 one to do it for you).
@@ -82,7 +82,7 @@ one to do it for you).
    - `crm.objects.contacts.read`, `crm.objects.companies.read`, `crm.objects.deals.read`
    - `crm.objects.owners.read` (to see record owners), and `tickets` read if you use tickets
    - `crm.schemas.contacts.read` / `.companies.read` / `.deals.read` (so field discovery works)
-   - *(optional)* the **account-info** read scope — only needed to display the portal id
+   - _(optional)_ the **account-info** read scope — only needed to display the portal id
 4. **Create the app** and copy its **access token** (starts with `pat-…`). That's what you paste into
    setup. Keep it safe — treat it like a password.
 
@@ -91,7 +91,7 @@ one to do it for you).
 
 ---
 
-## How your keys are handled  (security)
+## How your keys are handled (security)
 
 - **Read-only by construction** — there is no create/update/delete code path in this tool.
 - Your tokens are stored at `~/.config/hubspot-multi-mcp/portals.json` (file mode `600`, readable
@@ -104,9 +104,9 @@ one to do it for you).
 ## Using more than one portal
 
 Every request picks a portal by name. If you only set up **one** portal, you don't have to name it —
-it's the default. With several, just say which one (*"in the marketing hubspot…"*), or let Claude
+it's the default. With several, just say which one (_"in the marketing hubspot…"_), or let Claude
 search them all with `hubspot_find_across`. Custom objects work too: ask Claude to
-*"list the objects in the sales hubspot"* and it'll show your custom object types, which you can then
+_"list the objects in the sales hubspot"_ and it'll show your custom object types, which you can then
 search like any other.
 
 ## Troubleshooting
@@ -118,7 +118,7 @@ search like any other.
 - **A token "did not work"** → wrong portal, or missing read scopes. Re-issue the private-app token
   with the read scopes above and run setup again.
 
-## For teams  *(operator guide)*
+## For teams _(operator guide)_
 
 This uses **per-user read-only tokens**: an admin mints them, each person runs setup themselves. No
 keys are ever shared in chat.
@@ -130,7 +130,7 @@ keys are ever shared in chat.
 4. **To off-board someone:** delete their private app in HubSpot. Tokens are independent, so revoking
    one person affects no one else.
 
-## Run from source  *(optional, for developers)*
+## Run from source _(optional, for developers)_
 
 ```bash
 git clone https://github.com/devender/hubspot-multi-mcp

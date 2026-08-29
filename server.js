@@ -38,7 +38,9 @@ export async function startServer() {
   } else {
     instanceArg = z
       .enum(names)
-      .describe(`Which HubSpot portal to use: ${names.join(', ')}. Ask the user, or call hubspot_list_instances.`);
+      .describe(
+        `Which HubSpot portal to use: ${names.join(', ')}. Ask the user, or call hubspot_list_instances.`
+      );
   }
 
   const objectArg = z
@@ -80,7 +82,9 @@ export async function startServer() {
           }
         }
       }
-      return text(rows.length ? rows.join('\n') : 'No portals configured. Run `npx hubspot-multi-mcp setup`.');
+      return text(
+        rows.length ? rows.join('\n') : 'No portals configured. Run `npx hubspot-multi-mcp setup`.'
+      );
     }
   );
 
@@ -122,8 +126,14 @@ export async function startServer() {
     {
       instance: instanceArg,
       object: objectArg,
-      query: z.string().optional().describe('Free-text search string (e.g. a name, email, or company domain).'),
-      properties: z.array(z.string()).optional().describe('Which properties to return (defaults to the HubSpot standard set).'),
+      query: z
+        .string()
+        .optional()
+        .describe('Free-text search string (e.g. a name, email, or company domain).'),
+      properties: z
+        .array(z.string())
+        .optional()
+        .describe('Which properties to return (defaults to the HubSpot standard set).'),
       limit: z.number().int().min(1).max(100).optional().describe('Max records to return (default 25).'),
     },
     async ({ instance, object, query, properties, limit }) => {

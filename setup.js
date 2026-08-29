@@ -48,7 +48,6 @@ export async function runSetup() {
 
   const portals = {};
   let n = 1;
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const name = await ask(rl, `  Name for HubSpot #${n} (e.g. sales, marketing, eu) — or Enter to finish: `);
     if (!name) break;
@@ -79,7 +78,9 @@ export async function runSetup() {
       if (info) {
         console.log(`    ✓ "${key}" verified — portal ${info.portalId} (${info.uiDomain || 'na'})\n`);
       } else {
-        console.log(`    ✓ "${key}" verified — read access OK (add the account-info scope to show the portal id)\n`);
+        console.log(
+          `    ✓ "${key}" verified — read access OK (add the account-info scope to show the portal id)\n`
+        );
       }
       n += 1;
     } catch (e) {
